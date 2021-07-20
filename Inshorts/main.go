@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"reflect"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -47,19 +46,26 @@ func OpenConnection() *sql.DB {
 func GETHandler(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 	//pagination list using limit and offset query parameters
-	fmt.Println(reflect.TypeOf(query))
-	var limit, offset string = "1000", "0"
-	if query.Get("limit") != "" {
-		limit = query.Get("limit")
-	}
-	if query.Get("offset") != "" {
-		offset = query.Get("offset")
-	}
+	limit := query.Get("limit")
+	offset := query.Get("offset")
 	db := OpenConnection()
-	rows, err := db.Query("SELECT * FROM info LIMIT $1 OFFSET $2", limit, offset)
-	if err != nil {
-		log.Fatal(err)
+	var rows *sql.Rows
+	var err error
+	switch {
+	case limit == "" && offset != "":
+		sqlstatement := "SELECT * FROM info OFFSET $1"
+		rows, err = db.Query(sqlstatement, offset)
+	case limit != "" && offset == "":
+		sqlstatement := "SELECT * FROM info LIMIT $1"
+		rows, err = db.Query(sqlstatement, limit)
+	case limit == "" && offset == "":
+		sqlstatement := "SELECT * FROM info"
+		rows, err = db.Query(sqlstatement)
+	default:
+		sqlstatement := "SELECT * FROM info LIMIT $1 OFFSET $2"
+		rows, err = db.Query(sqlstatement, limit, offset)
 	}
+	checkErr(err)
 	var all []Article
 	for rows.Next() {
 		var article Article
@@ -69,7 +75,7 @@ func GETHandler(w http.ResponseWriter, r *http.Request) {
 	peopleBytes, _ := json.MarshalIndent(all, "", "\t")
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(peopleBytes)
-	fmt.Println("Posted!")
+	fmt.Println("Got all articles!")
 	defer rows.Close()
 	defer db.Close()
 }
