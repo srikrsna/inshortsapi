@@ -49,6 +49,7 @@ func GETHandler(w http.ResponseWriter, r *http.Request) {
 	limit := query.Get("limit")
 	offset := query.Get("offset")
 	db := OpenConnection()
+	defer db.Close()
 	var rows *sql.Rows
 	var err error
 	switch {
@@ -65,6 +66,7 @@ func GETHandler(w http.ResponseWriter, r *http.Request) {
 		sqlstatement := "SELECT * FROM info LIMIT $1 OFFSET $2"
 		rows, err = db.Query(sqlstatement, limit, offset)
 	}
+	defer rows.Close()
 	checkErr(err)
 	var all []Article
 	for rows.Next() {
@@ -76,8 +78,7 @@ func GETHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(peopleBytes)
 	fmt.Println("Got all articles!")
-	defer rows.Close()
-	defer db.Close()
+	
 }
 
 //singleGETHandler to fetch single article based on id
@@ -86,6 +87,7 @@ func singleGETHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("The ID is " + i)
 	id := string(i)
 	db := OpenConnection()
+	defer db.Close()
 	var a Article
 	sqlStatement := `SELECT * FROM info WHERE id=$1`
 	row := db.QueryRow(sqlStatement, id)
@@ -98,12 +100,13 @@ func singleGETHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write(singlearticle)
 	fmt.Println("id called:", id)
-	defer db.Close()
+	
 }
 
 //POSTHandler to insert an article and store in db
 func POSTHandler(w http.ResponseWriter, r *http.Request) {
 	db := OpenConnection()
+	defer db.Close()
 	var a Article
 	err := json.NewDecoder(r.Body).Decode(&a)
 	if err != nil {
@@ -119,7 +122,6 @@ func POSTHandler(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 	w.WriteHeader(http.StatusOK)
-	defer db.Close()
 }
 func checkErr(err error) {
 	if err != nil {
@@ -133,6 +135,7 @@ func queryHandler(w http.ResponseWriter, r *http.Request) {
 	q := query.Get("q")
 	fmt.Println(q)
 	db := OpenConnection()
+	defer db.Close()
 	var a Article
 	rows, err := db.Query(`SELECT * FROM info WHERE title=$1 OR subtitle=$1 OR content=$1`, q)
 	if err != nil {
@@ -148,7 +151,6 @@ func queryHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(articlequeried)
 	fmt.Println("Query exhibited!")
-	defer db.Close()
 }
 
 //Handler to delete an article wrt id
@@ -157,6 +159,7 @@ func deleteHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("The deleted ID is " + i)
 	id := string(i)
 	db := OpenConnection()
+	defer db.Close()
 	stmt, err := db.Prepare("DELETE from info WHERE id=$1")
 	checkErr(err)
 	res, err := stmt.Exec(id)
@@ -164,7 +167,6 @@ func deleteHandler(w http.ResponseWriter, r *http.Request) {
 	affect, err := res.RowsAffected()
 	checkErr(err)
 	fmt.Println(affect, "rows changed")
-	defer db.Close()
 }
 func multiplexer(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
