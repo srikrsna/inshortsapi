@@ -25,5 +25,18 @@ GET request with the query parameter ‘q’.URL:‘/articles/search?q={search t
 - Validation of input url query.
 - Response from list all articles is ordered by timestamp to get latest articles first.
 
+## Data Types
+Article looks like this:
+```json
+{
+        "id": "someid",
+        "title": "Title of the article",
+        "subtitle": "Subtitle",
+        "content": "Article/News body",
+        "creationtimestamp": "2021-08-07T15:52:43.239166+05:30"
+    }
+```
+
+
 
 
