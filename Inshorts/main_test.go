@@ -84,6 +84,6 @@ func BenchmarkSingleGETHandler(b *testing.B) {
 
 func BenchmarkQueryHandler(b *testing.B) {
 	for n := 0; n < b.N; n++ {
-		http.Get("http://localhost:8080/articles/search?q=2")
+		http.Get("http://localhost:8080/articles/search?q=u")
 	}
 }

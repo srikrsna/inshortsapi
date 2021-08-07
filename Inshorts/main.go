@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sync"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -18,6 +19,8 @@ type Article struct {
 	Content           string    `json:"content"`
 	CreationTimestamp time.Time `json:"creationtimestamp"`
 }
+
+var mutex sync.Mutex
 
 //Postgres connection consts
 const (
@@ -49,6 +52,10 @@ func multiplexer(w http.ResponseWriter, r *http.Request) {
 		GETHandler(w, r)
 	case "POST":
 		POSTHandler(w, r)
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		w.Write([]byte(`method not allowed`))
+		return
 	}
 }
 

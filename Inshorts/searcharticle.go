@@ -12,9 +12,6 @@ import (
 func queryHandler(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 	q := strings.TrimSpace(query.Get("q"))
-	// fmt.Println("TYPE", reflect.TypeOf(q))
-	// fmt.Println(q)
-	// fmt.Println(template.HTMLEscapeString(q))
 	check := template.HTMLEscapeString(q)
 	if check != q || len(q) == 0 {
 		w.WriteHeader(http.StatusBadRequest)
@@ -23,6 +20,8 @@ func queryHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	db := OpenConnection()
 	defer db.Close()
+	mutex.Lock()
+	defer mutex.Unlock()
 	//rows, err := db.Query(`SELECT * FROM info1 WHERE title=$1 OR subtitle=$1 OR content=$1`, q)
 	rows, err := db.Query(`SELECT * FROM info1 WHERE title like $1 OR subtitle like $1 OR content like $1`, "%"+q+"%")
 	if err != nil {
@@ -38,7 +37,11 @@ func queryHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	articlequeried, err := json.MarshalIndent(all, "", "\t")
-	checkErr(err)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(err.Error()))
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(articlequeried)
 	//fmt.Println("Query exhibited!")

@@ -11,7 +11,12 @@ func singleGETHandler(w http.ResponseWriter, r *http.Request) {
 	id := string(i)
 	db := OpenConnection()
 	defer db.Close()
+	mutex.Lock()
+	defer mutex.Unlock()
 	var a Article
+	if len(id) == 0 {
+		w.WriteHeader(http.StatusNotFound)
+	}
 	sqlStatement := `SELECT * FROM info1 WHERE id=$1`
 	row := db.QueryRow(sqlStatement, id)
 	err1 := row.Scan(&a.ID, &a.Title, &a.Subtitle, &a.Content, &a.CreationTimestamp)
@@ -19,10 +24,13 @@ func singleGETHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(`{ "message": "` + err1.Error() + `" }`))
 		return
-		//fmt.Println("id called:", id, "is not in data")
 	}
-	//singlearticle, _ := json.MarshalIndent(a, "", "\t")
-	singlearticle, _ := json.Marshal(a)
+	singlearticle, err := json.Marshal(a)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(err.Error()))
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(singlearticle)

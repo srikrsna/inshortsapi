@@ -16,6 +16,8 @@ func GETHandler(w http.ResponseWriter, r *http.Request) {
 	defer db.Close()
 	var rows *sql.Rows
 	var err error
+	mutex.Lock()
+	defer mutex.Unlock()
 	switch {
 	case limit == "" && offset != "":
 		sqlstatement := "SELECT * FROM info1 ORDER BY creationtimestamp DESC OFFSET $1 "
@@ -42,7 +44,12 @@ func GETHandler(w http.ResponseWriter, r *http.Request) {
 		rows.Scan(&article.ID, &article.Title, &article.Subtitle, &article.Content, &article.CreationTimestamp)
 		all = append(all, article)
 	}
-	peopleBytes, _ := json.MarshalIndent(all, "", "\t")
+	peopleBytes, err := json.MarshalIndent(all, "", "\t")
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(err.Error()))
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(peopleBytes)
