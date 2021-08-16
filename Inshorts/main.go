@@ -23,6 +23,14 @@ type Article struct {
 	CreationTimestamp time.Time `json:"creationtimestamp"`
 }
 
+/*
+/articles/<id>  (id) => Article
+/articles (Article) => Article
+/articles/delete/<id> (id) => Empty
+/articles/search/<q> (q string) => []Article
+/articles/list?limit?offset (limit, offset int) => []Article
+*/
+
 // OpenDb
 func OpenDb(user, password, dbname string) (*sql.DB, error) {
 	psqlInfo := fmt.Sprintf("user=%s password=%s dbname=%s sslmode=disable", user, password, dbname)
@@ -245,7 +253,7 @@ func (ah *ArticleHandler) DeleteArticle(w http.ResponseWriter, r *http.Request) 
 
 func WriteResponse(w http.ResponseWriter, v interface{}) {
 	if err := json.NewEncoder(w).Encode(v); err != nil {
-		log.Println("unable to write create article response: %v", err)
+		log.Println("unable to write create article response: ", err)
 	}
 }
 
